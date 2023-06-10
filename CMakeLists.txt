@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+project(hello LANGUAGES CXX CUDA)
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+enable_language(CUDA)
+add_executable(hello convertColorToGrayScale.cu)
+target_link_libraries(hello ${OpenCV_LIBS})

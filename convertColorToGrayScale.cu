@@ -6,6 +6,12 @@
 #include <chrono>
 #include <iostream>
 #include <cstdlib>
+#include <vector>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
 
 __global__ void convertColorToGrayScaleKernel(float* A, float* B, int m, int n){
     int col = blockDim.x * blockIdx.x + threadIdx.x;
@@ -54,19 +60,48 @@ void convertColorToGrayScale(float* h_A, float* h_B, int m, int n){
 int main(){
     std::cout << "Parallel Run" << std::endl;
     auto start_assigning = std::chrono::high_resolution_clock::now();
+    
+    std::string inpFilePath = "/data/rishubh/piyush/cuda_programming/images/bike_500_11zon.png";
+    cv::Mat img = cv::imread(inpFilePath, cv::IMREAD_COLOR);
+    cv::Mat img2;
+    if(img.empty())
+    {
+        std::cout << "Could not read the image: " << inpFilePath << std::endl;
+        return 1;
+    }
+    cv::resize(img, img, cv::Size(1024, 1024));
+    img.convertTo(img, CV_32FC3);
+
+    std::cout << img.rows << ", " << img.cols << std::endl;
+    // std::string outFilePath = "/data/rishubh/piyush/cuda_programming/output_images/bike_500_asitis.png";
+    // cv::imwrite(outFilePath, img);
 
     int m = 1024 , n = 1024;
+
     int length = m*n;
     float* h_A = (float*)malloc(3 * length * sizeof(float));
     float* h_B = (float*)malloc(length * sizeof(float));
 
-    for(int i=0; i<length; i++){
-        h_A[i*3 + 0] = std::rand()%255;
-        h_A[i*3 + 1] = std::rand()%255;
-        h_A[i*3 + 2] = std::rand()%255;
+    std::cout << "Memory allocated"<< std::endl;
+    std::cout << 3 * length << " " << length << std::endl;
+    std::cout<< sizeof(float)<<std::endl;
+// 3145728, 1048576
+    int offset = 0;
+    // cv::Vec3f channels = img.at<cv::Vec3f>(1023,1023);
 
-        h_B[i] = 0.0f; 
+    for(int i=0; i<m; i++){
+        for(int j=0; j<n; j++){
+            offset = (i*m+j)*3;
+            // std::cout << i << " " << j << " " << offset<<std::endl;
+            cv::Vec3f channels = img.at<cv::Vec3f>(i,j);
+            h_A[offset + 0] = channels[0];//std::rand()%255;
+            h_A[offset + 1] = channels[1];//std::rand()%255;
+            h_A[offset + 2] = channels[2];//std::rand()%255;
+
+            h_B[i*m+j] = 0.0f; 
+        }
     }
+    std::cout << "Memory filled with values" << std::endl;
 
     auto stop_assigning = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop_assigning - start_assigning);
@@ -80,6 +115,18 @@ int main(){
     auto stop_cuda_execution = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds>(stop_cuda_execution - start_cuda_execution);
     
+    cv::Mat out = cv::Mat::zeros(cv::Size(img.cols, img.rows), CV_32FC1);
+
+    for(int i=0; i<m; i++){
+        for(int j=0; j<n; j++){
+            offset = (i*m+j);
+            out.at<float>(i,j) = h_B[offset];
+        }
+    }
+
+    std::string outFilePath = "/data/rishubh/piyush/cuda_programming/output_images/bike_500_grayscale.png";
+    cv::imwrite(outFilePath, out);
+
     for(int i=0; i<3; i++){
         for(int j=0; j<3; j++){
             std::cout << h_B[j + i] << " , ";
