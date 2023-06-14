@@ -8,7 +8,7 @@ void vecAdd(float* h_A, float* h_B, float* h_C, int n){
     for(int i=0; i<10000; i++){
         h_C[i] = h_A[i]+ h_B[i];
     }
-}
+} 
 
 int main(){
     std::cout << "Sequential Run" << std::endl;
