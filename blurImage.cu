@@ -16,7 +16,7 @@ __device__ void blurImageChannelKernel() {
 }
 
 __global__ void blurImageKernel(float* a, float* b, int m, int n){
-    int row = blockDim.x * blockIdx.y + threadIdx.y;
+    int row = blockDim.y * blockIdx.y + threadIdx.y;
     int col = blockDim.x * blockIdx.x + threadIdx.x;
     // int offset = 3*(row * m + col);
 
